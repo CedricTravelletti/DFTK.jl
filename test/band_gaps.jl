@@ -7,12 +7,12 @@
     silicon = TestCases.silicon
 
     # Perturb from equilibrium so forces are not 0.
-    silicon = periodic_system(silicon.lattice, silicon.atoms, silicon.positions)
+    system = periodic_system(silicon.lattice, silicon.atoms, silicon.positions)
 
     model_kwargs = (; temperature=1e-6, functionals=[:lda_x, :lda_c_pw])
     basis_kwargs = (; kgrid=[6, 6, 6], Ecut=30.0)
     scf_kwargs = (; tol=1e-6)
-    model = model_DFT(silicon; model_kwargs...)
+    model = model_DFT(system; model_kwargs...)
     basis = PlaneWaveBasis(model; basis_kwargs...)
     
     scfres = self_consistent_field(basis; scf_kwargs...)
@@ -20,10 +20,10 @@
     
     # Reference values.
     vi = 4; εMax_valence = 0.258363u"hartree"; εMin_conduction = 0.2815352u"hartree"
-    direct_bandgap = 0.0937999 u"hartree"
+    direct_bandgap = 0.0937999u"hartree"
     
     @test band_gaps[:εMax_valence] ≈ εMax_valence rtol=1e-3
     @test band_gaps[:εMin_conduction] ≈ εMin_conduction rtol=1e-3
-    @test band_gaps[:direct_bandgap] ≈ irect_bandgap rtol=1e-3
+    @test band_gaps[:direct_bandgap] ≈ direct_bandgap rtol=1e-3
     @test band_gaps[:valence_band_index] == vi
 end
