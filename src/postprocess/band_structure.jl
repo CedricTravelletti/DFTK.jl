@@ -82,6 +82,37 @@ function compute_bands(basis::AbstractBasis; magnetic_moments=[], kwargs...)
     compute_bands(basis, irrfbz_path(basis.model, magnetic_moments); kwargs...)
 end
 
+"""
+Returns the index of the highest occupied band. 
+`atol` specifies the (fractional) occupations below which 
+a band is considered unoccupied.
+"""
+function valence_band_index(occupations; atol=1e-36)
+    filter = x -> isapprox(x, 0.; atol)
+    maximum(maximum.(findall.(!filter, occupations)))
+end
+
+""" 
+Compute quantities related to band gaps: maximum energy 
+in the valence band, minimum energy in the conduction band 
+and direct band gap. `atol` specifies the fractional occupation 
+under which a band is considered unoccupied.
+"""
+function compute_band_gaps(scfres::NamedTuple; atol=1e-36)
+    occupations = compute_occupation(scfres.basis, scfres.eigenvalues, scfres.εF)[:occupation]
+    vi = valence_band_index(occupations; atol)
+    # If the system is metallic, by convenction band gap is zero.
+    if DFTK.is_metal(scfres.eigenvalues, scfres.εF; tol=1e-4)
+        return (; εMax_valence=0.0u"hartree", εMin_conduction=0.0u"hartree",
+                direct_bandgap=0.0u"hartree", valence_band_index=vi)
+    else
+        εMax_valence = maximum([εk[vi] for εk in scfres.eigenvalues]) * u"hartree"
+        εMin_conduction = minimum([εk[vi + 1] for εk in scfres.eigenvalues]) * u"hartree"
+        direct_bandgap = minimum([εk[vi + 1] - εk[vi] for εk in scfres.eigenvalues]) * u"hartree"
+        return (; εMax_valence, εMin_conduction, direct_bandgap, valence_band_index=vi)
+    end
+end
+
 
 @doc raw"""
 Extract the high-symmetry ``k``-point path corresponding to the passed `model`

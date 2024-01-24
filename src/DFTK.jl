@@ -200,6 +200,7 @@ include("external/wannier_shared.jl")
 include("external/atoms_calculators.jl")
 
 export compute_bands
+export compute_band_gaps
 export plot_bandstructure
 export irrfbz_path
 export save_bands
