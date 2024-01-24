@@ -75,10 +75,11 @@ PAGES = [
     "Developer resources" => [
         "developer/setup.md",
         "developer/conventions.md",
+        "developer/style_guide.md",
         "developer/data_structures.md",
         "developer/useful_formulas.md",
         "developer/symmetries.md",
-        "developer/gpu_computations.md"
+        "developer/gpu_computations.md",
     ],
     "api.md",
     "publications.md",
@@ -198,7 +199,10 @@ end
 remote_args = CONTINUOUS_INTEGRATION ? (; ) : (; remotes=nothing)
 mathengine  = Documenter.MathJax3(Dict(
     :tex => Dict(
-        :macros => Dict(
+        :inlineMath => [["\$","\$"], ["\\(","\\)"]],
+        :tags       => "ams",
+        :packages   => ["base", "ams", "autoload", "configmacros"],
+        :macros     => Dict(
             :abs    => [raw"\left\|#1\right\|",     1],
             :ket    => [raw"\left|#1\right\rangle", 1],
             :bra    => [raw"\left\langle#1\right|", 1],

@@ -98,7 +98,7 @@ struct PlaneWaveBasis{T,
     #            # processor in the global kcoords array. To allow for contiguous array
     #            # indexing, this is given as a unit range for spin-up and spin-down
     krange_allprocs::Vector{Vector{UnitRange{Int}}}  # Same as above, but one entry per rank
-    krange_thisproc_allspin::Vector{Int}  # Indexing version == vcat(krange_thisproc...)
+    krange_thisproc_allspin::Vector{Int}  # Indexing version == reduce(vcat, krange_thisproc)
 
     ## Information on the hardware and device used for computations.
     architecture::Arch
@@ -289,7 +289,7 @@ function PlaneWaveBasis(model::Model{T}, Ecut::Real, fft_size::Tuple{Int, Int, I
         krange_allprocs = [[range, n_kpt .+ range] for range in krange_allprocs1]
     end
     krange_thisproc = krange_allprocs[1 + MPI.Comm_rank(comm_kpts)]
-    krange_thisproc_allspin = vcat(krange_thisproc...)
+    krange_thisproc_allspin = reduce(vcat, krange_thisproc)
 
     @assert mpi_sum(sum(kweights), comm_kpts) ≈ model.n_spin_components
     @assert length(kpoints) == length(kweights)
@@ -429,7 +429,7 @@ G_vectors(::PlaneWaveBasis, kpt::Kpoint) = kpt.G_vectors
     G_vectors_cart(basis::PlaneWaveBasis)
     G_vectors_cart(basis::PlaneWaveBasis, kpt::Kpoint)
 
-The list of ``G`` vectors of a given `basis` or `kpt`, in cartesian coordinates.
+The list of ``G`` vectors of a given `basis` or `kpt`, in Cartesian coordinates.
 """
 function G_vectors_cart(basis::PlaneWaveBasis)
     map(recip_vector_red_to_cart(basis.model), G_vectors(basis))
@@ -451,7 +451,7 @@ end
 @doc raw"""
     Gplusk_vectors_cart(basis::PlaneWaveBasis, kpt::Kpoint)
 
-The list of ``G + k`` vectors, in cartesian coordinates.
+The list of ``G + k`` vectors, in Cartesian coordinates.
 """
 function Gplusk_vectors_cart(basis::PlaneWaveBasis, kpt::Kpoint)
     map(recip_vector_red_to_cart(basis.model), Gplusk_vectors(basis, kpt))
@@ -467,7 +467,7 @@ r_vectors(basis::PlaneWaveBasis) = basis.r_vectors
 @doc raw"""
     r_vectors_cart(basis::PlaneWaveBasis)
 
-The list of ``r`` vectors, in cartesian coordinates.
+The list of ``r`` vectors, in Cartesian coordinates.
 """
 r_vectors_cart(basis::PlaneWaveBasis) = map(vector_red_to_cart(basis.model), r_vectors(basis))
 
