@@ -103,13 +103,22 @@ function compute_band_gaps(scfres::NamedTuple; atol=1e-36)
     vi = valence_band_index(occupations; atol)
     # If the system is metallic, by convenction band gap is zero.
     if DFTK.is_metal(scfres.eigenvalues, scfres.εF; tol=1e-4)
-        return (; εMax_valence=0.0u"hartree", εMin_conduction=0.0u"hartree",
-                direct_bandgap=0.0u"hartree", valence_band_index=vi)
+        return (; εMax_valence=0.0u"hartree", εMax_valence_kpoint=[0, 0, 0.],
+                εMin_conduction=0.0u"hartree", εMin_conduction_kpoint=[0, 0, 0.],
+                direct_bandgap=0.0u"hartree", indirect_bandgap=0.0u"hartree",
+                valence_band_index=vi)
     else
-        εMax_valence = maximum([εk[vi] for εk in scfres.eigenvalues]) * u"hartree"
-        εMin_conduction = minimum([εk[vi + 1] for εk in scfres.eigenvalues]) * u"hartree"
+        εMax_valence, εMax_kind = findmax([εk[vi] for εk in scfres.eigenvalues])
+        εMin_conduction, εMin_kind = findmin([εk[vi + 1] for εk in scfres.eigenvalues])
+        εMax_valence *= u"hartree"; εMin_conduction *= u"hartree"
+        
+        εMax_valence_kpoint = scfres.basis.kpoints[εMax_kind]
+        εMin_conduction_kpoint = scfres.basis.kpoints[εMin_kind]
+        
         direct_bandgap = minimum([εk[vi + 1] - εk[vi] for εk in scfres.eigenvalues]) * u"hartree"
-        return (; εMax_valence, εMin_conduction, direct_bandgap, valence_band_index=vi)
+        indirect_bandgap = εMin_conduction - εMax_valence
+        return (; εMax_valence, εMax_valence_kpoint, εMin_conduction, εMin_conduction_kpoint,
+                direct_bandgap, indirect_bandgap, valence_band_index=vi)
     end
 end
 
