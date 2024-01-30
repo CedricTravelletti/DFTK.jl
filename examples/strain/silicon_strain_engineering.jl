@@ -19,7 +19,7 @@ atoms = fill(ElementPsp(:Si; psp=load_psp(psp_hgh)), 2)
 system = periodic_system(lattice, atoms, positions)
 
 # Create a simple calculator for the model.
-model_kwargs = (; functionals = [:lda_x, :lda_c_pw], temperature = 1e-6)
+model_kwargs = (; functionals = [:lda_x, :lda_c_pw], temperature = 1e-3)
 basis_kwargs = (; kgrid = [5, 5, 5], Ecut = 20.0)
 scf_kwargs = (; tol = 1e-6)
 calculator = DFTKCalculator(; model_kwargs, basis_kwargs, scf_kwargs, verbose=true)
