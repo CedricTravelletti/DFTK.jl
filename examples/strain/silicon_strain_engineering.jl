@@ -6,6 +6,8 @@ using LazyArtifacts
 using Unitful
 using UnitfulAtomic
 using GeometryOptimization
+using ComponentArrays
+using ForwardDiff
     
     
 lattice = [0.0  5.131570667152971 5.131570667152971;
@@ -26,17 +28,35 @@ calculator = DFTKCalculator(; model_kwargs, basis_kwargs, scf_kwargs, verbose=tr
 
 
 function strain_energy(strain)
-    new_system = apply_voigt_strain(system, strain)
-    # Initialize empty state, since we change the cell.
-    state = DFTK.DFTKState()
-    AtomsCalculators.potential_energy(new_system, calculator; state)
+    # Only modify strains, not positions.
+    positions = ComponentVector(atoms = position(system), strain = strain)
+    new_system = update_positions(system, positions)
+    
+    AtomsCalculators.potential_energy(new_system, calculator)
 end
 
 function strain_indirect_band_gap(strain)
-    new_system = apply_voigt_strain(system, strain)
-    # Initialize empty state, since we change the cell.
-    state = DFTK.DFTKState()
+    # Only modify strains, not positions.
+    positions = ComponentVector(atoms = position(system), strain = strain)
+    new_system = update_positions(system, positions)
+    
     # Comput energy so we have the scfres.
-    AtomsCalculators.potential_energy(new_system, calculator; state)
-    compute_band_gaps(calculator.state.scfres)[:indirect_bandgap]
+    AtomsCalculators.potential_energy(new_system, calculator)
+    # compute_band_gaps(calculator.state.scfres)[:indirect_bandgap]
 end
+
+function f(x)
+    new_system = update_positions(system, x * u"bohr")
+    
+    AtomsCalculators.potential_energy(new_system, calculator)
+end
+
+ForwardDiff.gradient(f, zeros(6))
+
+using ForwardDiff: Dual
+xin = [2000.0 + Dual(0, (1,0,0)), 20000.0 + Dual(0, (0,1,0)), 80.0]
+
+f([
+   [Dual{Float64}(0., 1.), Dual{Float64}(0., 1.), Dual{Float64}(0., 1.)],
+   [Dual{Float64}(0., 1.), Dual{Float64}(0., 1.), Dual{Float64}(0., 1.)]
+  ])
