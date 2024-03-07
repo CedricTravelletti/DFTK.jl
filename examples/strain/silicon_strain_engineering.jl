@@ -10,9 +10,10 @@ using ComponentArrays
 using ForwardDiff
     
     
-lattice = [0.0  5.131570667152971 5.131570667152971;
-           5.131570667152971 0.0 5.131570667152971;
-           5.131570667152971 5.131570667152971  0.0]
+a = 5.431u"angstrom"          # Silicon lattice constant
+lattice = a / 2 * [[0 1 1.];  # Silicon lattice vectors
+                   [1 0 1.];  # specified column by column
+                   [1 1 0.]];
 hgh_lda_family = artifact"hgh_lda_hgh"
 psp_hgh = joinpath(hgh_lda_family, "si-q4.hgh")
 
@@ -21,8 +22,8 @@ atoms = fill(ElementPsp(:Si; psp=load_psp(psp_hgh)), 2)
 system = periodic_system(lattice, atoms, positions)
 
 # Create a simple calculator for the model.
-model_kwargs = (; functionals = [:lda_x, :lda_c_pw], temperature = 1e-3)
-basis_kwargs = (; kgrid = [5, 5, 5], Ecut = 20.0)
+model_kwargs = (; functionals = [:lda_x, :lda_c_pw], temperature = 1e-6)
+basis_kwargs = (; kgrid = [6, 6, 6], Ecut = 50.0)
 scf_kwargs = (; tol = 1e-6)
 calculator = DFTKCalculator(; model_kwargs, basis_kwargs, scf_kwargs, verbose=true)
 
