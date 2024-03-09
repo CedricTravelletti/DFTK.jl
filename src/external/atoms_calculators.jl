@@ -17,6 +17,11 @@ struct DFTKState{T}
 end
 DFTKState() = DFTKState((; ψ=nothing, ρ=nothing))
 
+mutable struct DFTKCalculator
+    params::DFTKParameters
+    state::DFTKState
+end
+
 """
 Updates state between calculations. This can be used to speed up computations 
 by interpolating from past results. 
@@ -32,11 +37,6 @@ function update_state(algorithm, state::DFTKState, original_system, new_system)
     end
 end
 calculator_state(calc::DFTKCalculator) = calc.state
-
-mutable struct DFTKCalculator
-    params::DFTKParameters
-    state::DFTKState
-end
 
 """
 Construct a [AtomsCalculators](https://github.com/JuliaMolSim/AtomsCalculators.jl)
