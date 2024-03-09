@@ -17,6 +17,22 @@ struct DFTKState{T}
 end
 DFTKState() = DFTKState((; ψ=nothing, ρ=nothing))
 
+"""
+Updates state between calculations. This can be used to speed up computations 
+by interpolating from past results. 
+
+Currently, it re-uses the last density as a starting point for the scf if 
+the lattice hasn't changed, and starts from scratch otherwise.
+"""
+function update_state(algorithm, state::DFTKState, original_system, new_system)
+    if bounding_box(original_system) != bounding_box(new_system)
+        DFTK.DFTKState()
+    else
+        state
+    end
+end
+calculator_state(calc::DFTKCalculator) = calc.state
+
 mutable struct DFTKCalculator
     params::DFTKParameters
     state::DFTKState
