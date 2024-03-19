@@ -4,6 +4,7 @@
 # see https://github.com/JuliaMolSim/Molly.jl/blob/master/src/types.jl
 using AtomsBase
 using AtomsCalculators
+import AtomsCalculators: calculator_state, update_state
 using Unitful
 using UnitfulAtomic
 
