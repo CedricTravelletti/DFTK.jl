@@ -13,6 +13,7 @@ using GPUArraysCore
 using Random
 using ChainRulesCore
 using PrecompileTools
+using AtomsCalculators
 
 @template METHODS =
 """
