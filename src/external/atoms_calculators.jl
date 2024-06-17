@@ -66,7 +66,7 @@ function DFTKCalculator(; verbose=false, model_kwargs, basis_kwargs, scf_kwargs)
     DFTKCalculator(ps)
 end
 
-function compute_scf!(system::AbstractSystem, calculator::DFTKCalculator, ps::DFTKparams, st)
+function compute_scf!(system::AbstractSystem, calculator::DFTKCalculator, ps::DFTKParameters, st)
     # We re-use the symmetries from the state to avoid issues
     # with accidentally more symmetric structures.
     symmetries = haskey(st.scfres, :basis) ? st.scfres.basis.model.symmetries : true
