@@ -77,24 +77,24 @@ function compute_scf!(system::AbstractSystem, calculator::DFTKCalculator, ps::DF
     scfres = self_consistent_field(basis; ρ, st.scfres.ψ, ps.scf_kwargs...)
 end
 
-AtomsCalculators.@generate_interface AtomsCalculators.calculate(
+AtomsCalculators.@generate_interface function AtomsCalculators.calculate(
         ::AtomsCalculators.Energy, system::AbstractSystem, calculator::DFTKCalculator,
         ps=nothing, st=nothing; kwargs...)
-    scfres = compute_scf!(system, calculator, st)
+    scfres = compute_scf!(system, calculator, ps, st)
     return (; :energy => scfres.energies.total * u"hartree", :state => scfres)
 end
 
-AtomsCalculators.@generate_interface AtomsCalculators.calculate(
+AtomsCalculators.@generate_interface function AtomsCalculators.calculate(
         ::AtomsCalculators.Forces, system::AbstractSystem, calculator::DFTKCalculator,
         ps=nothing, st=nothing; kwargs...)
-    scfres = compute_scf!(system, calculator, state)
+    scfres = compute_scf!(system, calculator, ps, st)
     return (; :forces => compute_forces_cart(scfres) * u"hartree/bohr", :state => scfres)
 end
 
-AtomsCalculators.@generate_interface AtomsCalculators.calculate(
+AtomsCalculators.@generate_interface function AtomsCalculators.calculate(
         ::AtomsCalculators.Virial, system::AbstractSystem, calculator::DFTKCalculator,
         ps=nothing, st=nothing; kwargs...)
-    scfres = compute_scf!(system, calculator, state)
+    scfres = compute_scf!(system, calculator, ps, st)
     virial = - (compute_stresses_cart(scfres) * scfres.basis.model.unit_cell_volume) * u"hartree"
     return (; :virial => virial, :state => scfres)
 end
