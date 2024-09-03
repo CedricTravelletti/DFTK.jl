@@ -12,14 +12,8 @@ Base.@kwdef struct DFTKParameters
     scf_kwargs   = (; )
 end
 
-struct DFTKState{T}
-    scfres::T
-end
-DFTKState() = DFTKState((; ψ=nothing, ρ=nothing))
-
 mutable struct DFTKCalculator
-    params::DFTKParameters
-    state::DFTKState
+    parameters::DFTKParameters
 end
 
 """
@@ -29,14 +23,13 @@ by interpolating from past results.
 Currently, it re-uses the last density as a starting point for the scf if 
 the lattice hasn't changed, and starts from scratch otherwise.
 """
-function update_state(algorithm, state::DFTKState, original_system, new_system)
+function update_state(algorithm, state, original_system, new_system)
     if bounding_box(original_system) != bounding_box(new_system)
-        DFTK.DFTKState()
+        nothing
     else
         state
     end
 end
-calculator_state(calc::DFTKCalculator) = calc.state
 
 """
 Construct a [AtomsCalculators](https://github.com/JuliaMolSim/AtomsCalculators.jl)
@@ -55,42 +48,46 @@ julia> DFTKCalculator(; model_kwargs=(; functionals=[:lda_x, :lda_c_vwn]),
                         scf_kwargs=(; tol=1e-4))
 ```
 """
-function DFTKCalculator(params::DFTKParameters)
-    DFTKCalculator(params, DFTKState())  # Create dummy state if not given.
+function DFTKCalculator(parameters::DFTKParameters)
+    DFTKCalculator(parameters, DFTKState())  # Create dummy state if not given.
 end
 
 function DFTKCalculator(; verbose=false, model_kwargs, basis_kwargs, scf_kwargs)
     if !verbose
         scf_kwargs = merge(scf_kwargs, (; callback=identity))
     end
-    params = DFTKParameters(; model_kwargs, basis_kwargs, scf_kwargs)
-    DFTKCalculator(params)
+    parameters = DFTKParameters(; model_kwargs, basis_kwargs, scf_kwargs)
+    DFTKCalculator(parameters)
 end
 
 function compute_scf!(system::AbstractSystem, calculator::DFTKCalculator, state::DFTKState)
-    params = calculator.params
+    parameters = calculator.parameters
 
     # We re-use the symmetries from the state to avoid issues
     # with accidentally more symmetric structures.
     symmetries = haskey(state.scfres, :basis) ? state.scfres.basis.model.symmetries : true
-    model = model_DFT(system; symmetries, params.model_kwargs...)
-    basis = PlaneWaveBasis(model; params.basis_kwargs...)
+    model = model_DFT(system; symmetries, parameters.model_kwargs...)
+    basis = PlaneWaveBasis(model; parameters.basis_kwargs...)
 
     ρ = @something state.scfres.ρ guess_density(basis, system)
-    scfres = self_consistent_field(basis; ρ, state.scfres.ψ, params.scf_kwargs...)
-    calculator.state = DFTKState(scfres)
+    self_consistent_field(basis; ρ, state.scfres.ψ, parameters.scf_kwargs...)
 end
 
-AtomsCalculators.@generate_interface function AtomsCalculators.potential_energy(
-        system::AbstractSystem, calculator::DFTKCalculator; state = DFTKState(),
+AtomsCalculators.@generate_interface function AtomsCalculators.calculate(
+        ::AtomsCalculators.Energy,
+        system::AbstractSystem, calculator::DFTKCalculator,
+        parameters, state;
         kwargs...)
-    compute_scf!(system, calculator, state)
-    calculator.state.scfres.energies.total
+    scfres = compute_scf!(system, calculator, state)
+    return (; :energy => scfres.energies.total,
+              :state => scfres)
 end
 
-AtomsCalculators.@generate_interface function AtomsCalculators.forces(
-        system::AbstractSystem, calculator::DFTKCalculator; state = DFTKState(),
+AtomsCalculators.@generate_interface function AtomsCalculators.calculate(
+        system::AbstractSystem, calculator::DFTKCalculator,
+        parameters, state;
         kwargs...)
-    compute_scf!(system, calculator, state)
-    compute_forces_cart(calculator.state.scfres)
+    scfres = compute_scf!(system, calculator, state)
+    return (; :forces => compute_forces_cart(scfres),
+              :state => scfres)
 end
